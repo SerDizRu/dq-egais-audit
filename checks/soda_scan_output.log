@@ -1,0 +1,62 @@
+# Вывод реального прогона Soda Core 3.5.6 на БД Project_DQ
+# Команда: SODA_PG_PASSWORD=*** soda scan -d project_dq -c configuration.yml checks.yml
+# Дата: 2026-08-30 18:56
+# Вердикт совпадает с SQL-реализацией правил.
+
+[18:56:02] Soda Core 3.5.6
+[18:56:03] Using DefaultSampler
+[18:56:04] Using DefaultSampler
+[18:56:07] Using DefaultSampler
+[18:56:09] Using DefaultSampler
+[18:56:10] The query produced a lot of results, which have not all been stored in memory. Soda limits the number of processed results for sampling-like use-cases to 10000. You might want to consider optimising your query to select less results.
+[18:56:10] Using DefaultSampler
+[18:56:10] Using DefaultSampler
+[18:56:11] The query produced a lot of results, which have not all been stored in memory. Soda limits the number of processed results for sampling-like use-cases to 10000. You might want to consider optimising your query to select less results.
+[18:56:11] Using DefaultSampler
+[18:56:12] The query produced a lot of results, which have not all been stored in memory. Soda limits the number of processed results for sampling-like use-cases to 10000. You might want to consider optimising your query to select less results.
+[18:56:12] Using DefaultSampler
+[18:56:12] Using DefaultSampler
+[18:56:12] Scan summary:
+[18:56:12] 17/22 checks PASSED: 
+[18:56:12]     doc_oper in project_dq
+[18:56:12]       DQ-07 qua sign consistent with type_doc [PASSED]
+[18:56:12]       DQ-12 spravka B belongs to exactly one spravka A [PASSED]
+[18:56:12]       DQ-13 batch has a single product code [PASSED]
+[18:56:12]       DQ-09 cod_alco plausible range [PASSED]
+[18:56:12]       missing_count(org_id) = 0 [PASSED]
+[18:56:12]       missing_count(operation) = 0 [PASSED]
+[18:56:12]       missing_count(date_operation) = 0 [PASSED]
+[18:56:12]       missing_count(type_doc) = 0 [PASSED]
+[18:56:12]       invalid_count(type_doc) = 0 [PASSED]
+[18:56:12]       missing_count(cod_alco) = 0 [PASSED]
+[18:56:12]       missing_count(qua) = 0 [PASSED]
+[18:56:12]       missing_count(doc_1) = 0 [PASSED]
+[18:56:12]       invalid_percent(doc_1) <= 1% [PASSED]
+[18:56:12]       missing_count(doc_2) = 0 [PASSED]
+[18:56:12]       invalid_percent(doc_2) <= 1% [PASSED]
+[18:56:12]       duplicate_count(id) = 0 [PASSED]
+[18:56:12]     list_doc in project_dq
+[18:56:12]       DQ-11 orphan rows in doc_oper (inserted bypassing the load) [PASSED]
+[18:56:12] 1/22 checks WARNED: 
+[18:56:12]     doc_oper in project_dq
+[18:56:12]       freshness(date_operation) warn when > 2d fail when > 30d [WARNED]
+[18:56:12]         max_column_timestamp: 2026-08-21 23:59:29.247000
+[18:56:12]         max_column_timestamp_utc: 2026-08-21 23:59:29.247000+00:00
+[18:56:12]         now_variable_name: NOW
+[18:56:12]         now_timestamp: 2026-08-30T15:56:02.336945+00:00
+[18:56:12]         now_timestamp_utc: 2026-08-30 15:56:02.336945+00:00
+[18:56:12]         freshness: 8 days, 15:56:33.089945
+[18:56:12] 4/22 checks FAILED: 
+[18:56:12]     doc_oper in project_dq
+[18:56:12]       DQ-14 movement balance per organization [FAILED]
+[18:56:12]         value: 96309
+[18:56:12]       invalid_percent(org_id) <= 1% [FAILED]
+[18:56:12]         check_value: 10.0
+[18:56:12]         row_count: 900000
+[18:56:12]         invalid_count: 90000
+[18:56:12]     list_doc in project_dq
+[18:56:12]       DQ-02 load completeness (list_doc -> doc_oper) [FAILED]
+[18:56:12]         value: 100000
+[18:56:12]       DQ-04 org_id accuracy vs accepted client_id [FAILED]
+[18:56:12]         value: 90000
+[18:56:12] Oops! 4 failure. 1 warning. 0 errors. 17 pass.

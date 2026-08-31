@@ -1,0 +1,243 @@
+
+
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: dq-egais-critical
+    folder: Data Quality
+    # Критичные правила проверяем каждые 15 минут: пайплайн ходит раз в сутки,
+    # но алерт должен подняться сразу после его прогона, а не к следующему утру.
+    interval: 15m
+    rules:
+
+      # ---------------------------------------------------------------
+      - uid: dq-critical-rules-failed
+        title: "DQ · критичное правило провалено"
+        condition: threshold
+        for: 0m        # без выдержки: критичное правило красное — значит инцидент уже есть
+        data:
+          - refId: query
+            relativeTimeRange: { from: 172800, to: 0 }   # окно 48 ч: сутки цикла + запас
+            datasourceUid: project_dq_postgres
+            model:
+              format: table
+              rawSql: |
+                SELECT count(*) AS failed_critical
+                FROM public.dq_check_results c
+                JOIN public.dq_run_history r USING (run_id)
+                WHERE r.run_id = (SELECT max(run_id) FROM public.dq_run_history)
+                  AND c.status = 'FAIL'
+                  AND c.rule_id IN ('DQ-02', 'DQ-03', 'DQ-04', 'DQ-11', 'DQ-14');
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: query
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+        labels:
+          severity: critical
+          domain: egais
+          owner: etl-team
+        annotations:
+          summary: "Витрина doc_oper расходится с принятым потоком list_doc"
+          description: >
+            Провалено критичное DQ-правило. Публикация витрины в контур контроля заблокирована
+            гейтом gate_downstream_publish. Разбор — по шаблону docs/Отчёт по инциденту.md,
+            детали прогона — public.dq_check_results.
+          runbook_url: "../docs/Отчёт по инциденту.md"
+
+      # ---------------------------------------------------------------
+      - uid: dq-orphan-rows
+        title: "DQ-11 · в витрине записи мимо приёмки"
+        condition: threshold
+        for: 0m
+        data:
+          - refId: query
+            relativeTimeRange: { from: 172800, to: 0 }
+            datasourceUid: project_dq_postgres
+            model:
+              format: table
+              rawSql: |
+                SELECT coalesce(max(c.failed_rows), 0) AS orphan_rows
+                FROM public.dq_check_results c
+                WHERE c.rule_id = 'DQ-11'
+                  AND c.run_id = (SELECT max(run_id) FROM public.dq_run_history);
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: query
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+        labels:
+          severity: critical
+          domain: egais
+          owner: security
+        annotations:
+          summary: "В doc_oper есть строки, которых не было в принятом потоке"
+          description: >
+            Появление таких записей означает, что данные попали в юридически значимую витрину
+            в обход приёмки. Отдельный сценарий: эскалация в ИБ, а не только в команду загрузки.
+
+      # ---------------------------------------------------------------
+      - uid: dq-pipeline-stale
+        title: "DQ · пайплайн не отработал за сутки"
+        condition: threshold
+        for: 30m      # выдержка: даём DAG'у доработать, если он запустился с задержкой
+        data:
+          - refId: query
+            relativeTimeRange: { from: 259200, to: 0 }
+            datasourceUid: project_dq_postgres
+            model:
+              format: table
+              rawSql: |
+                SELECT round(extract(epoch FROM now() - max(run_started_at)) / 3600.0, 1) AS hours_since_last_run
+                FROM public.dq_run_history;
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: query
+              conditions:
+                - evaluator: { type: gt, params: [26] }   # 24 ч цикл + 2 ч запаса
+        labels:
+          severity: critical
+          domain: egais
+          owner: etl-team
+        annotations:
+          summary: "Нет свежего прогона DQ-пайплайна"
+          description: >
+            Молчащий мониторинг опаснее красного: без прогона MTTD снова становится неизмеримым.
+            Проверить DAG dq_monitoring_list_doc_doc_oper в Airflow.
+
+  - orgId: 1
+    name: dq-egais-warning
+    folder: Data Quality
+    interval: 1h
+    rules:
+
+      # ---------------------------------------------------------------
+      - uid: dq-high-rules-failed
+        title: "DQ · правило severity High провалено"
+        condition: threshold
+        for: 1h       # выдержка час: не критично, разбор в течение рабочего дня
+        data:
+          - refId: query
+            relativeTimeRange: { from: 172800, to: 0 }
+            datasourceUid: project_dq_postgres
+            model:
+              format: table
+              rawSql: |
+                SELECT count(*) AS failed_high
+                FROM public.dq_check_results c
+                WHERE c.run_id = (SELECT max(run_id) FROM public.dq_run_history)
+                  AND c.status = 'FAIL'
+                  AND c.rule_id IN ('DQ-01', 'DQ-05', 'DQ-06', 'DQ-07', 'DQ-10');
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: query
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+        labels:
+          severity: warning
+          domain: egais
+        annotations:
+          summary: "Провалено правило severity High"
+          description: "Отчётность искажена, но сопоставление витрины с принятым потоком не нарушено."
+
+      # ---------------------------------------------------------------
+      - uid: dq-freshness-sla
+        title: "DQ-08 · нарушен SLA свежести данных"
+        condition: threshold
+        for: 2h
+        data:
+          - refId: query
+            relativeTimeRange: { from: 604800, to: 0 }
+            datasourceUid: project_dq_postgres
+            model:
+              format: table
+              rawSql: |
+                SELECT round(extract(epoch FROM now() - max(date_operation)) / 3600.0, 1) AS data_age_hours
+                FROM public.doc_oper;
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: query
+              conditions:
+                - evaluator: { type: gt, params: [48] }   # SLA из Data Contract: сутки приёмка + сутки загрузка
+        labels:
+          severity: warning
+          domain: egais
+        annotations:
+          summary: "Свежих операций нет дольше 48 часов"
+          description: >
+            Соответствует WARN-порогу freshness в ../checks/checks.yml. На учебном датасете
+            срабатывает штатно: данные статичны с 2026-08-21.
+
+# ------------------------------------------------------------------
+# Маршрутизация: критичные — в дежурный канал немедленно и с повтором,
+# предупреждения — раз в рабочий день, чтобы не создавать алертную усталость.
+# ------------------------------------------------------------------
+policies:
+  - orgId: 1
+    receiver: dq-email
+    group_by: [alertname, domain]
+    routes:
+      - receiver: dq-oncall
+        object_matchers:
+          - [severity, "=", critical]
+        group_wait: 0s
+        group_interval: 5m
+        repeat_interval: 2h        # повторяем, пока инцидент не взят в работу
+      - receiver: dq-email
+        object_matchers:
+          - [severity, "=", warning]
+        group_wait: 5m
+        group_interval: 1h
+        repeat_interval: 24h
+
+contactPoints:
+  - orgId: 1
+    name: dq-oncall
+    receivers:
+      - uid: dq-oncall-slack
+        type: slack
+        settings:
+          recipient: "#dq-alerts"
+          # Вебхук хранится в secure-настройках Grafana, не в файле провижининга.
+          title: '{{ template "dq.title" . }}'
+          text: '{{ template "dq.message" . }}'
+  - orgId: 1
+    name: dq-email
+    receivers:
+      - uid: dq-steward-email
+        type: email
+        settings:
+          addresses: "data-steward@example.local;etl-team@example.local"
+          singleEmail: false
+
+templates:
+  - orgId: 1
+    name: dq.title
+    template: |
+      {{ define "dq.title" }}[{{ .CommonLabels.severity | toUpper }}] {{ .CommonLabels.alertname }}{{ end }}
+  - orgId: 1
+    name: dq.message
+    template: |
+      {{ define "dq.message" }}
+      {{ range .Alerts }}{{ .Annotations.summary }}
+      {{ .Annotations.description }}
+      Дашборд: технический DQ-мониторинг · таблица public.dq_check_results
+      {{ end }}{{ end }}
+
+# ------------------------------------------------------------------
+# Проверка синтаксиса без запуска Grafana:
+#   python -c "import yaml,sys; yaml.safe_load(open('alerts.yml')); print('ok')"
+# Применение:
+#   sudo cp alerts.yml /etc/grafana/provisioning/alerting/ && sudo systemctl restart grafana-server
+# ------------------------------------------------------------------

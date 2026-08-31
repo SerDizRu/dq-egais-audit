@@ -1,0 +1,9 @@
+
+data_source project_dq:
+  type: postgres
+  host: ${SODA_PG_HOST}
+  port: 5432
+  username: postgres
+  password: ${SODA_PG_PASSWORD} 
+  database: Project_DQ
+  schema: public

@@ -1,0 +1,2 @@
+# dq_pipeline.py — не DAG-файл, импортируется явно из airflow_dag.py
+dq_pipeline\.py

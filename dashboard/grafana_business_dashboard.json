@@ -1,0 +1,237 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_POSTGRES",
+      "label": "PostgreSQL (Project_DQ)",
+      "description": "Источник данных с таблицами dq_run_history / dq_check_results",
+      "type": "datasource",
+      "pluginId": "postgres",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "11.0.0" },
+    { "type": "datasource", "id": "postgres", "name": "PostgreSQL", "version": "1.0.0" }
+  ],
+  "title": "ЕГАИС · Можно ли доверять сегодняшним данным",
+  "description": "Бизнес-дашборд для управления контроля рынка: один вопрос и три числа под ним. Технические подробности — в дашборде DQ-мониторинга.",
+  "tags": ["data-quality", "egais", "business"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30m",
+  "time": { "from": "now-30d", "to": "now" },
+  "editable": true,
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "# Можно ли доверять сегодняшним данным?\n\nОрганизации передали данные корректно — принятый поток проверен и цел. Дефекты возникли внутри нашего контура: при загрузке в витрину и при ручном восстановлении потерянных операций. Ниже — что именно требует внимания."
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "Проверок пройдено",
+      "description": "Доля правил качества, прошедших последний ежедневный прогон. Целевой уровень — 100%.",
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT round(100.0 * passed_rules / total_rules, 1) AS \"Пройдено, %\"\nFROM public.dq_run_history\nORDER BY run_id DESC\nLIMIT 1;",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 90 },
+              { "color": "green", "value": 100 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "showThresholdMarkers": true, "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "stat",
+      "title": "Операции не доходят до контроля",
+      "description": "Принятые от организаций операции, которые не доехали до витрины при загрузке. Их не видно ни в сверке деклараций, ни в статистике оборота — организация выглядит «не отчитавшейся».",
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 4 },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT failed_rows AS \"Операций потеряно\"\nFROM public.dq_check_results\nWHERE rule_id = 'DQ-02'\n  AND run_id = (SELECT max(run_id) FROM public.dq_run_history);",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Код организации повреждён",
+      "description": "Операции, у которых код организации не совпадает с принятым: потерян ведущий ноль. Сопоставить их с реестром лицензиатов нельзя — операции «повисают».",
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 4 },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT failed_rows AS \"Операций искажено\"\nFROM public.dq_check_results\nWHERE rule_id = 'DQ-04'\n  AND run_id = (SELECT max(run_id) FROM public.dq_run_history);",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Поставки с несходящимся балансом",
+      "description": "Пары «организация × справка Б», где списано больше, чем получено. Такого быть не может: значит часть операций поставки потеряна или уехала под искажённым кодом.",
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 4 },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT failed_rows AS \"Поставок не сходится\"\nFROM public.dq_check_results\nWHERE rule_id = 'DQ-14'\n  AND run_id = (SELECT max(run_id) FROM public.dq_run_history);",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Доля операций без дефектов, % — по дням",
+      "description": "Одна метрика на всём графике: сколько процентов принятых операций доехало до витрины. Целевой уровень — 99%.",
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 11 },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT r.run_started_at AS time,\n       c.pass_rate_pct AS \"Операций без дефектов, %\"\nFROM public.dq_check_results c\nJOIN public.dq_run_history r USING (run_id)\nWHERE c.rule_id = 'DQ-02'\n  AND $__timeFilter(r.run_started_at)\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 80,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "pointSize": 6,
+            "showPoints": "always"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 99 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "showLegend": false }, "tooltip": { "mode": "single" } }
+    },
+    {
+      "type": "table",
+      "title": "Что требует внимания",
+      "description": "Проверки, не прошедшие последний прогон, простым языком.",
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 11 },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT CASE c.rule_id\n         WHEN 'DQ-02' THEN 'Операции не доехали до витрины'\n         WHEN 'DQ-03' THEN 'Код организации неверного формата'\n         WHEN 'DQ-04' THEN 'Код не совпадает с принятым'\n         WHEN 'DQ-14' THEN 'Баланс поставок не сходится'\n         ELSE c.entity || ' · ' || c.dimension\n       END AS \"Что не так\",\n       c.failed_rows AS \"Затронуто\",\n       c.pass_rate_pct AS \"Норма, %\"\nFROM public.dq_check_results c\nWHERE c.run_id = (SELECT max(run_id) FROM public.dq_run_history)\n  AND c.status = 'FAIL'\nORDER BY c.pass_rate_pct;",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "align": "left" } }, "overrides": [] },
+      "options": { "showHeader": true }
+    },
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 20 },
+      "options": {
+        "mode": "markdown",
+        "content": "**Что делать.** Принятый от организаций поток проверен и целостен — дефект внутри нашего контура. Пока критичные проверки красные, витрина не публикуется в контур контроля: гейт в ежедневном пайплайне останавливает публикацию. Разбор конкретной поставки — по правилу баланса (DQ-14), детали — в отчёте по инциденту."
+      }
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+2026-08-22 22:02:16,695 [INFO] === DQ pipeline run started (triggered_by=manual) ===
+2026-08-22 22:02:18,710 [INFO] DQ-01 [Операция / Completeness] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-22 22:02:18,710 [WARNING] DQ-02 [Операция / Completeness (загрузка)] pass_rate= 90.00% (threshold=99.0%) -> FAIL
+2026-08-22 22:02:18,710 [WARNING] DQ-03 [Контрагент / Validity] pass_rate= 90.00% (threshold=99.0%) -> FAIL
+2026-08-22 22:02:18,710 [WARNING] DQ-04 [Контрагент / Accuracy] pass_rate= 90.00% (threshold=99.0%) -> FAIL
+2026-08-22 22:02:18,710 [INFO] DQ-05 [Операция / Uniqueness] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-22 22:02:18,711 [INFO] DQ-06 [Документ учёта / Validity] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-22 22:02:18,711 [INFO] DQ-07 [Операция / Consistency] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-22 22:02:18,711 [INFO] DQ-08 [Операция / Timeliness] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-22 22:02:18,711 [INFO] DQ-09 [Товар / Consistency] pass_rate=100.00% (threshold=99.0%) -> PASS
+2026-08-22 22:02:18,711 [INFO] DQ-10 [Форма А / Форма Б / Validity] pass_rate=100.00% (threshold=99.0%) -> PASS
+2026-08-22 22:02:18,717 [INFO] === Run #1 finished: FAIL (3/10 rules failed, critical failures: ['DQ-02', 'DQ-03', 'DQ-04']) ===
+2026-08-30 18:28:52,442 [INFO] === DQ pipeline run started (triggered_by=manual) ===
+2026-08-30 18:29:02,378 [INFO] DQ-01 [Операция / Completeness] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:29:02,378 [WARNING] DQ-02 [Операция / Completeness (загрузка)] pass_rate= 90.00% (threshold=99.0%) -> FAIL
+2026-08-30 18:29:02,378 [WARNING] DQ-03 [Организация / Validity] pass_rate= 90.00% (threshold=99.0%) -> FAIL
+2026-08-30 18:29:02,378 [WARNING] DQ-04 [Организация / Accuracy] pass_rate= 90.00% (threshold=99.0%) -> FAIL
+2026-08-30 18:29:02,378 [INFO] DQ-05 [Операция / Uniqueness] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:29:02,378 [INFO] DQ-06 [Документ учёта / Validity] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:29:02,379 [INFO] DQ-07 [Операция / Consistency] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:29:02,379 [INFO] DQ-08 [Операция / Timeliness] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:29:02,379 [INFO] DQ-09 [Товар / Validity] pass_rate=100.00% (threshold=99.0%) -> PASS
+2026-08-30 18:29:02,379 [INFO] DQ-10 [Форма А / Форма Б / Validity] pass_rate=100.00% (threshold=99.0%) -> PASS
+2026-08-30 18:29:02,379 [INFO] DQ-11 [Операция / Integrity] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:29:02,379 [INFO] DQ-12 [Справка Б / Integrity (иерархия справок)] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:29:02,379 [INFO] DQ-13 [Партия (справка А) / Consistency (товар партии)] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:29:02,390 [INFO] === Run #29 finished: FAIL (3/13 rules failed, critical failures: ['DQ-02', 'DQ-03', 'DQ-04']) ===
+2026-08-30 18:55:43,850 [INFO] === DQ pipeline run started (triggered_by=manual) ===
+2026-08-30 18:56:01,699 [INFO] DQ-01 [Операция / Completeness] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:56:01,699 [WARNING] DQ-02 [Операция / Completeness (загрузка)] pass_rate= 90.00% (threshold=99.0%) -> FAIL
+2026-08-30 18:56:01,699 [WARNING] DQ-03 [Организация / Validity] pass_rate= 90.00% (threshold=99.0%) -> FAIL
+2026-08-30 18:56:01,699 [WARNING] DQ-04 [Организация / Accuracy] pass_rate= 90.00% (threshold=99.0%) -> FAIL
+2026-08-30 18:56:01,700 [INFO] DQ-05 [Операция / Uniqueness] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:56:01,700 [INFO] DQ-06 [Документ учёта / Validity] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:56:01,700 [INFO] DQ-07 [Операция / Consistency] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:56:01,700 [INFO] DQ-08 [Операция / Timeliness] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:56:01,700 [INFO] DQ-09 [Товар / Validity] pass_rate=100.00% (threshold=99.0%) -> PASS
+2026-08-30 18:56:01,700 [INFO] DQ-10 [Форма А / Форма Б / Validity] pass_rate=100.00% (threshold=99.0%) -> PASS
+2026-08-30 18:56:01,700 [INFO] DQ-11 [Операция / Integrity] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:56:01,700 [INFO] DQ-12 [Справка Б / Integrity (иерархия справок)] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:56:01,700 [INFO] DQ-13 [Партия (справка А) / Consistency (товар партии)] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-30 18:56:01,700 [WARNING] DQ-14 [Перемещение × организация / Consistency (баланс)] pass_rate= 64.98% (threshold=99.0%) -> FAIL
+2026-08-30 18:56:01,712 [INFO] === Run #30 finished: FAIL (4/14 rules failed, critical failures: ['DQ-02', 'DQ-03', 'DQ-04', 'DQ-14']) ===
+2026-08-31 22:29:43,629 [INFO] === DQ pipeline run started (triggered_by=manual) ===
+2026-08-31 22:29:52,545 [INFO] DQ-01 [Операция / Полнота] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-31 22:29:52,545 [WARNING] DQ-02 [Операция / Полнота загрузки] pass_rate= 90.00% (threshold=99.0%) -> FAIL
+2026-08-31 22:29:52,545 [WARNING] DQ-03 [Организация / Валидность] pass_rate= 90.00% (threshold=99.0%) -> FAIL
+2026-08-31 22:29:52,545 [WARNING] DQ-04 [Организация / Точность] pass_rate= 90.00% (threshold=99.0%) -> FAIL
+2026-08-31 22:29:52,545 [INFO] DQ-05 [Операция / Уникальность] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-31 22:29:52,545 [INFO] DQ-06 [Документ учёта / Валидность] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-31 22:29:52,545 [INFO] DQ-07 [Операция / Согласованность] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-31 22:29:52,545 [INFO] DQ-08 [Операция / Своевременность] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-31 22:29:52,545 [INFO] DQ-09 [Товар / Валидность] pass_rate=100.00% (threshold=99.0%) -> PASS
+2026-08-31 22:29:52,545 [INFO] DQ-10 [Справка А / Справка Б / Валидность] pass_rate=100.00% (threshold=99.0%) -> PASS
+2026-08-31 22:29:52,545 [INFO] DQ-11 [Операция / Целостность] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-31 22:29:52,545 [INFO] DQ-12 [Справка Б / Целостность (иерархия справок)] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-31 22:29:52,545 [INFO] DQ-13 [Партия (справка А) / Согласованность (товар партии)] pass_rate=100.00% (threshold=100.0%) -> PASS
+2026-08-31 22:29:52,545 [WARNING] DQ-14 [Перемещение × организация / Согласованность (баланс)] pass_rate= 64.98% (threshold=99.0%) -> FAIL
+2026-08-31 22:29:52,549 [INFO] === Run #34 finished: FAIL (4/14 rules failed, critical failures: ['DQ-02', 'DQ-03', 'DQ-04', 'DQ-14']) ===

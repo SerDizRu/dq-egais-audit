@@ -1,0 +1,132 @@
+# ============================================================
+# Soda Core (SodaCL) — те же 14 правил, что в Реестр правил и метрик.md / 02_dq_rules.sql
+# Объект контроля: витрина ЕГАИС doc_oper, эталон: сырой слой приёмки list_doc
+# Datasource: Project_DQ (PostgreSQL)
+# Запуск: soda scan -d project_dq -c configuration.yml checks.yml
+# ============================================================
+
+checks for doc_oper:
+
+  # DQ-01: Completeness обязательных полей
+  - missing_count(org_id) = 0
+  - missing_count(operation) = 0
+  - missing_count(date_operation) = 0
+  - missing_count(type_doc) = 0
+  - missing_count(cod_alco) = 0
+  - missing_count(qua) = 0
+  - missing_count(doc_1) = 0
+  - missing_count(doc_2) = 0
+
+  # DQ-03: Validity формата org_id (8 цифр, ведущий 0)
+  - invalid_percent(org_id) <= 1%:
+      valid regex: ^0\d{7}$
+
+  # DQ-05: Uniqueness id
+  - duplicate_count(id) = 0
+
+  # DQ-06: Validity допустимых значений type_doc.
+  # Синтаксис "values in (...) must be in [...]" SodaCL 3.5 не принимает
+  # (token recognition error на кавычках) — рабочая форма через invalid_count.
+  - invalid_count(type_doc) = 0:
+      valid values: [chek, spis]
+
+  # DQ-10: Validity формата Форма А / Форма Б
+  - invalid_percent(doc_1) <= 1%:
+      valid regex: ^1_\d{10}$
+  - invalid_percent(doc_2) <= 1%:
+      valid regex: ^2_\d{10}$
+
+  # DQ-08: Timeliness — свежесть потока операций.
+  # ВНИМАНИЕ: freshness в SodaCL меряет возраст САМОЙ СВЕЖЕЙ записи, тогда как
+  # SQL-версия DQ-08 проверяет попадание КАЖДОЙ строки в окно хранения.
+  # Проверки дополняют друг друга: здесь — «поток не встал», в SQL — «нет
+  # записей вне окна».
+  # Два порога вместо одного: warn при нарушении SLA свежести из Data Contract
+  # (сутки на приёмку + сутки на загрузку), fail — когда поток встал совсем.
+  # На учебном датасете данные статичны (последняя операция 2026-08-21), поэтому
+  # проверка штатно светится WARN — это ожидаемо и показано осознанно.
+  - freshness(date_operation):
+      warn: when > 2d
+      fail: when > 30d
+
+  # DQ-07: Consistency — знак qua согласован с type_doc
+  - failed rows:
+      name: DQ-07 qua sign consistent with type_doc
+      fail query: |
+        SELECT *
+        FROM doc_oper
+        WHERE NOT ((type_doc = 'chek' AND qua > 0) OR (type_doc = 'spis' AND qua < 0))
+
+  # DQ-12: Integrity — справка Б принадлежит ровно одной справке А.
+  # Справка А сопровождает партию от производства до продажи, справка Б —
+  # отдельное перемещение этой партии, поэтому оба номера ЗАКОНОМЕРНО
+  # повторяются во многих операциях. Проверять здесь нужно не уникальность,
+  # а иерархию: перемещение не может принадлежать двум разным партиям.
+  - failed rows:
+      name: DQ-12 spravka B belongs to exactly one spravka A
+      fail query: |
+        SELECT doc_2, count(DISTINCT doc_1) AS spravka_a_count
+        FROM doc_oper
+        GROUP BY doc_2
+        HAVING count(DISTINCT doc_1) > 1
+
+  # DQ-13: Consistency — партия однородна по товару (одна справка А = один код продукции)
+  - failed rows:
+      name: DQ-13 batch has a single product code
+      fail query: |
+        SELECT doc_1, count(DISTINCT cod_alco) AS product_count
+        FROM doc_oper
+        GROUP BY doc_1
+        HAVING count(DISTINCT cod_alco) > 1
+
+  # DQ-14: Consistency — баланс перемещения по организации.
+  # По справке Б нельзя списать больше, чем получено: сумма количеств в разрезе
+  # (org_id, doc_2) не может быть отрицательной. В принятом потоке нарушений нет,
+  # в витрине они появляются там, где операции пары потерялись при загрузке или
+  # уехали под искажённым кодом организации.
+  - failed rows:
+      name: DQ-14 movement balance per organization
+      fail query: |
+        SELECT org_id, doc_2, sum(qua) AS balance
+        FROM doc_oper
+        GROUP BY org_id, doc_2
+        HAVING sum(qua) < 0
+
+  # DQ-09: Consistency — правдоподобный диапазон cod_alco
+  - failed rows:
+      name: DQ-09 cod_alco plausible range
+      fail query: |
+        SELECT *
+        FROM doc_oper
+        WHERE NOT (cod_alco > 0 AND length(cod_alco::text) BETWEEN 15 AND 19)
+
+# Кросс-табличные проверки против эталона list_doc
+checks for list_doc:
+
+  # DQ-02: Completeness загрузки — записи источника, не попавшие в doc_oper
+  - failed rows:
+      name: DQ-02 load completeness (list_doc -> doc_oper)
+      fail query: |
+        SELECT l.sid
+        FROM list_doc l
+        LEFT JOIN doc_oper d ON d.id = l.sid
+        WHERE d.id IS NULL
+
+  # DQ-04: Accuracy — org_id в витрине vs принятый client_id
+  - failed rows:
+      name: DQ-04 org_id accuracy vs accepted client_id
+      fail query: |
+        SELECT d.id, d.org_id, l.client_id
+        FROM doc_oper d
+        JOIN list_doc l ON l.sid = d.id
+        WHERE d.org_id <> l.client_id
+
+  # DQ-11: Integrity — строки витрины, которых не было в принятом потоке.
+  # Сторож ручных вставок в обход загрузки (см. Шаг 2, проверка гипотез).
+  - failed rows:
+      name: DQ-11 orphan rows in doc_oper (inserted bypassing the load)
+      fail query: |
+        SELECT d.id, d.org_id, d.date_operation
+        FROM doc_oper d
+        LEFT JOIN list_doc l ON l.sid = d.id
+        WHERE l.sid IS NULL
