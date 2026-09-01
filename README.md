@@ -246,13 +246,13 @@ sudo cp dashboard/alerts.yml /etc/grafana/provisioning/alerting/
 sudo systemctl restart grafana-server
 ```
 
-### 7. Ноутбук
+### 7. Notebook
 
 ```bash
 jupyter lab notebooks/01_data_profiling.ipynb
 ```
 
-Ноутбук исполнен на живой БД — все таблицы и графики в нём сохранены вместе с выводом,
+Notebook исполнен на живой БД — все таблицы и графики в нём сохранены вместе с выводом,
 поэтому его можно читать и без подключения к базе.
 
 ## Что показывает мониторинг сейчас
